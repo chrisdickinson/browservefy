@@ -18,12 +18,15 @@ http.createServer(function(req, resp) {
   var url = URL.parse(req.url).pathname.slice(1) || 'index.html'
     , path = Path.resolve(Path.join(process.cwd(), url))
     , stream
+    , b
 
   if(path === ENTRY_POINT) {
-    console.log('B /'+url)
-    stream = response_stream(spawn('browserify', browserify_args).stdout)
+    console.log('/'+url, 'browserify '+browserify_args.join(' '))
+    stream = response_stream((b = spawn('browserify', browserify_args)).stdout)
+
+    b.stderr.pipe(process.stdout)
   } else {
-    console.log('G /'+url)
+    console.log('/'+url)
     stream = filed(path)
   }
 
@@ -39,7 +42,7 @@ function get_args() {
     }
   } 
 
-  browserify_args = argv.splice(i, argv.length - i)
+  browserify_args = argv.splice(i+1, argv.length - i)
   
   ENTRY_POINT = Path.resolve(
     Path.join(process.cwd(), argv[0] || 'main.js')
