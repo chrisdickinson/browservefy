@@ -1,0 +1,25 @@
+{
+  "name": "browservefy",
+  "version": "0.0.0",
+  "description": "quicky http server to test out browserify changes rapidly",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/chrisdickinson/node-browservefy.git"
+  },
+  "keywords": [
+    "simplehttpserver",
+    "browserify"
+  ],
+  "author": "Chris Dickinson <chris@neversaw.us>",
+  "license": "MIT",
+  "dependencies": {
+    "response-stream": "0.0.0",
+    "filed": "0.0.7",
+    "oppressor": "0.0.1"
+  },
+  "bin": {
+    "browservefy": "./bin/browservefy"
+  },
+  "preferGlobal": true
+}
