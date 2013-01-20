@@ -5,6 +5,8 @@ var http = require('http')
   , Path = require('path')
   , URL = require('url')
   , response_stream = require('response-stream')
+  , fs = require('fs')
+  , fake_index_html = fs.readFileSync(Path.join(__dirname, 'fake_index.html'), 'utf8')
 
 var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
   , browserify_args
@@ -27,13 +29,22 @@ http.createServer(function(req, resp) {
     b.stderr.pipe(process.stdout)
   } else {
     console.log('/'+url)
-    stream = filed(path)
+    if(!fs.existsSync(path)) {
+      return fake_index(resp)
+    } else {
+      stream = filed(path)
+    }
   }
 
-  stream.on('error', function() { resp.end('500') })
+  stream.on('error', function() { console.log('whaaaat'); resp.end('500') })
 
   stream.pipe(resp)
 }).listen(PORT)
+
+function fake_index(resp) {
+  resp.writeHead(200, {'content-type':'text/html'})
+  resp.end(fake_index_html.replace('{{ PATH }}', ENTRY_POINT.replace(process.cwd(), '')))
+}
 
 function get_args() {
   for(var i = 0, len = argv.length; i < len; ++i) {

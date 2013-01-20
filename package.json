@@ -1,11 +1,11 @@
 {
   "name": "browservefy",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "quicky http server to test out browserify changes rapidly",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/chrisdickinson/node-browservefy.git"
+    "url": "git://github.com/chrisdickinson/browservefy.git"
   },
   "keywords": [
     "simplehttpserver",
