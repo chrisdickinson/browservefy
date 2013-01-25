@@ -9,6 +9,7 @@ var http = require('http')
   , fake_index_html = fs.readFileSync(Path.join(__dirname, 'fake_index.html'), 'utf8')
 
 var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
+  , browserify_path = which_browserify()
   , browserify_args
   , ENTRY_POINT
   , PORT
@@ -24,7 +25,7 @@ http.createServer(function(req, resp) {
 
   if(path === ENTRY_POINT) {
     console.log('/'+url, 'browserify '+browserify_args.join(' '))
-    stream = response_stream((b = spawn('browserify', browserify_args)).stdout)
+    stream = response_stream((b = spawn(browserify_path(), browserify_args)).stdout)
 
     b.stderr.pipe(process.stdout)
   } else {
@@ -72,6 +73,14 @@ function fix_filed() {
     old_pipe.call(this, x, y)
     return x
   }
+}
 
-
+function which_browserify() {
+  var local = Path.join(process.cwd(), 'node_modules/.bin/browserify')
+  if(fs.existsSync(local)) {
+    console.log('using browserify@'+local.replace(process.cwd(), '.'))
+    return local 
+  } 
+  console.log('using global browserify')
+  return 'browserify'
 }
