@@ -7,6 +7,9 @@ var http = require('http')
   , response_stream = require('response-stream')
   , fs = require('fs')
   , fake_index_html = fs.readFileSync(Path.join(__dirname, 'fake_index.html'), 'utf8')
+  , process = require('process')
+  , console = require('console')
+  , optimist = require('optimist').argv
 
 var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
   , browserify_path = which_browserify()
@@ -14,7 +17,6 @@ var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
   , ENTRY_POINT
   , PORT
 
-fix_filed()
 get_args()
 
 http.createServer(function(req, resp) {
@@ -24,7 +26,7 @@ http.createServer(function(req, resp) {
     , b
 
   if(path === ENTRY_POINT) {
-    console.log('/'+url, 'browserify '+browserify_args.join(' '))
+    console.log('/'+url, browserify_path+' '+browserify_args.join(' '))
     stream = response_stream((b = spawn(browserify_path, browserify_args)).stdout)
 
     b.stderr.pipe(process.stdout)
@@ -52,10 +54,10 @@ function get_args() {
     if(argv[i] === '--') {
       break
     }
-  } 
+  }
 
   browserify_args = argv.splice(i+1, argv.length - i)
-  
+
   ENTRY_POINT = Path.resolve(
     Path.join(process.cwd(), argv[0] || 'main.js')
   )
@@ -63,24 +65,19 @@ function get_args() {
   PORT = +argv[1] || 9966
   console.log('listening on '+PORT)
 
-  browserify_args.unshift(ENTRY_POINT)  
-}
-
-function fix_filed() {
-  // bugfix (mikael's filed doesn't return `dst` on `pipe(dst)`, SIGH):
-  var old_pipe = filed.File.prototype.pipe
-  filed.File.prototype.pipe = function(x, y) {
-    old_pipe.call(this, x, y)
-    return x
-  }
+  browserify_args.unshift(ENTRY_POINT)
 }
 
 function which_browserify() {
+  if (optimist.browserify) {
+    return optimist.browserify
+  }
+
   var local = Path.join(process.cwd(), 'node_modules/.bin/browserify')
   if(fs.existsSync(local)) {
     console.log('using browserify@'+local.replace(process.cwd(), '.'))
-    return local 
-  } 
+    return local
+  }
   console.log('using global browserify')
   return 'browserify'
 }
