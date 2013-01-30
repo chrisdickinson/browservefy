@@ -26,7 +26,7 @@ http.createServer(function(req, resp) {
     , b
 
   if(path === ENTRY_POINT) {
-    console.log('/'+url, 'browserify '+browserify_args.join(' '))
+    console.log('/'+url, browserify_path+' '+browserify_args.join(' '))
     stream = response_stream((b = spawn(browserify_path, browserify_args)).stdout)
 
     b.stderr.pipe(process.stdout)
