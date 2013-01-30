@@ -70,7 +70,7 @@ function get_args() {
 
 function which_browserify() {
   if (optimist.browserify) {
-    return Path.join(process.cwd(), optimist.browserify)
+    return optimist.browserify
   }
 
   var local = Path.join(process.cwd(), 'node_modules/.bin/browserify')
