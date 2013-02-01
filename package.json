@@ -1,6 +1,6 @@
 {
   "name": "browservefy",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "quicky http server to test out browserify changes rapidly",
   "main": "index.js",
   "repository": {
