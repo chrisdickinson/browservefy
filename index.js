@@ -46,7 +46,9 @@ http.createServer(function(req, resp) {
 }).listen(PORT)
 
 if (optimist.liveReload) {
-  var liveReloadPort = optimist.liveReload || 9967
+  var liveReloadPort = optimist.liveReload === true ? 9967 :
+    optimist.liveReload
+
   LiveReloadServer({
     port: liveReloadPort
   })
