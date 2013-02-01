@@ -10,6 +10,7 @@ var http = require('http')
   , process = require('process')
   , console = require('console')
   , optimist = require('optimist').argv
+  , LiveReloadServer = require('live-reload')
 
 var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
   , browserify_path = which_browserify()
@@ -44,9 +45,24 @@ http.createServer(function(req, resp) {
   stream.pipe(resp)
 }).listen(PORT)
 
+if (optimist.live) {
+  var liveReloadPort = optimist.live === true ? 9967 :
+    optimist.live
+
+  LiveReloadServer({
+    port: liveReloadPort
+  })
+}
+
 function fake_index(resp) {
   resp.writeHead(200, {'content-type':'text/html'})
-  resp.end(fake_index_html.replace('{{ PATH }}', ENTRY_POINT.replace(process.cwd(), '')))
+  var liveReloadText = optimist.live ?
+    "<script src='http://localhost:" + liveReloadPort + "'></script>" : ""
+
+  var html = fake_index_html.
+    replace('{{ PATH }}', ENTRY_POINT.replace(process.cwd(), '')).
+    replace('{{ EXTRA }}', liveReloadText)
+  resp.end(html)
 }
 
 function get_args() {
