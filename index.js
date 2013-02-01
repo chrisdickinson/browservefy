@@ -45,9 +45,9 @@ http.createServer(function(req, resp) {
   stream.pipe(resp)
 }).listen(PORT)
 
-if (optimist.liveReload) {
-  var liveReloadPort = optimist.liveReload === true ? 9967 :
-    optimist.liveReload
+if (optimist.live) {
+  var liveReloadPort = optimist.live === true ? 9967 :
+    optimist.live
 
   LiveReloadServer({
     port: liveReloadPort
@@ -56,7 +56,7 @@ if (optimist.liveReload) {
 
 function fake_index(resp) {
   resp.writeHead(200, {'content-type':'text/html'})
-  var liveReloadText = optimist.liveReload ?
+  var liveReloadText = optimist.live ?
     "<script src='http://localhost:" + liveReloadPort + "'></script>" : ""
 
   var html = fake_index_html.
