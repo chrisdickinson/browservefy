@@ -71,7 +71,7 @@ function fake_index(resp) {
 
   resp.writeHead(200, {'content-type':'text/html'})
 
-  live_text = '<script src="http://localhost:"' + LIVE_PORT + '"></script>'
+  live_text = '<script src="http://localhost:' + LIVE_PORT + '"></script>'
   html = fake_index_html.
     replace('{{ PATH }}', ENTRY_POINT.replace(process.cwd(), '')).
     replace('{{ EXTRA }}', LIVE_PORT ? live_text : '')
