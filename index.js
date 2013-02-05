@@ -80,7 +80,7 @@ function fake_index(resp) {
 }
 
 function get_args() {
-  if(!argv.length) {
+  if(!argv.length || optimist.h || optimist.help) {
     return help()
   }
 
