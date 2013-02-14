@@ -27,6 +27,8 @@ http.createServer(function(req, resp) {
     console.log('/'+url, 'browserify '+browserify_args.join(' '))
     stream = response_stream((b = spawn(browserify_path, browserify_args)).stdout)
 
+    resp.setHeader("content-type", "application/javascript")
+
     b.stderr.pipe(process.stdout)
   } else {
     console.log('/'+url)
@@ -52,10 +54,10 @@ function get_args() {
     if(argv[i] === '--') {
       break
     }
-  } 
+  }
 
   browserify_args = argv.splice(i+1, argv.length - i)
-  
+
   ENTRY_POINT = Path.resolve(
     Path.join(process.cwd(), argv[0] || 'main.js')
   )
@@ -63,7 +65,7 @@ function get_args() {
   PORT = +argv[1] || 9966
   console.log('listening on '+PORT)
 
-  browserify_args.unshift(ENTRY_POINT)  
+  browserify_args.unshift(ENTRY_POINT)
 }
 
 function fix_filed() {
@@ -79,8 +81,8 @@ function which_browserify() {
   var local = Path.join(process.cwd(), 'node_modules/.bin/browserify')
   if(fs.existsSync(local)) {
     console.log('using browserify@'+local.replace(process.cwd(), '.'))
-    return local 
-  } 
+    return local
+  }
   console.log('using global browserify')
   return 'browserify'
 }
