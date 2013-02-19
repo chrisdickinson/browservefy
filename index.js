@@ -39,6 +39,9 @@ http.createServer(function(req, resp) {
     args[0] = filepath
     stream = response_stream((b = spawn(browserify_path, args)).stdout)
 
+    resp.setHeader("content-type", "application/javascript")
+
+
     b.stderr.pipe(process.stdout)
   } else {
     console.log('/'+url)
