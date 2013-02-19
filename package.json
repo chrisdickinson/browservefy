@@ -16,7 +16,10 @@
   "dependencies": {
     "response-stream": "0.0.0",
     "filed": "0.0.7",
-    "oppressor": "0.0.1"
+    "oppressor": "0.0.1",
+    "process": "~0.5.1",
+    "live-reload": "~0.2.0",
+    "optimist": "~0.3.5"
   },
   "bin": {
     "browservefy": "./bin/browservefy"
