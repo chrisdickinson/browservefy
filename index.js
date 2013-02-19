@@ -41,7 +41,6 @@ http.createServer(function(req, resp) {
 
     resp.setHeader("content-type", "application/javascript")
 
-
     b.stderr.pipe(process.stdout)
   } else {
     console.log('/'+url)
