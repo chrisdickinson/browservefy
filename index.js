@@ -31,16 +31,21 @@ http.createServer(function(req, resp) {
     , filepath = path.resolve(path.join(process.cwd(), url))
     , stream
     , b
+    , uri = URL.parse(req.url, true)
 
-  if(filepath === ENTRY_POINT) {
+  if(filepath === ENTRY_POINT || uri.query.browserify === "true") {
     console.log('/'+url, browserify_path+' '+browserify_args.join(' '))
-    stream = response_stream((b = spawn(browserify_path, browserify_args)).stdout)
+    var args = browserify_args.slice()
+    args[0] = filepath
+    stream = response_stream((b = spawn(browserify_path, args)).stdout)
+
+    resp.setHeader("content-type", "application/javascript")
 
     b.stderr.pipe(process.stdout)
   } else {
     console.log('/'+url)
     if(!fs.existsSync(filepath)) {
-      return fake_index(resp)
+      return fake_index(req, resp)
     } else {
       stream = filed(filepath)
     }
@@ -61,19 +66,27 @@ if(optimist.live) {
   LIVE_PORT = optimist.live === true ? 9967 : optimist.live
 
   LiveReloadServer({
-    port: LIVE_PORT 
+    port: LIVE_PORT
   })
 }
 
-function fake_index(resp) {
+function fake_index(req, resp) {
   var live_text
     , html
 
   resp.writeHead(200, {'content-type':'text/html'})
 
+  var uri = URL.parse(req.url, true)
+
+  var indexPath = uri.query.p || ENTRY_POINT.replace(process.cwd(), "")
+
+  if (uri.query.p) {
+    indexPath += "?browserify=true"
+  }
+
   live_text = '<script src="http://localhost:' + LIVE_PORT + '"></script>'
   html = fake_index_html.
-    replace('{{ PATH }}', ENTRY_POINT.replace(process.cwd(), '')).
+    replace('{{ PATH }}', indexPath).
     replace('{{ EXTRA }}', LIVE_PORT ? live_text : '')
 
   resp.end(html)
