@@ -65,7 +65,13 @@ http.createServer(function(req, resp) {
     stream.setHeader('content-type', 'text/javascript')
 
     bfy.stderr.pipe(process.stdout)
-    bfy.stderr.on('data', bfyerror)
+    var error_buf = ''
+    bfy.stderr.on('data', function (chunk) {
+      error_buf += chunk
+    })
+    bfy.stderr.on('end', function () {
+      bfyerror(error_buf)
+    })
   } else if(fs.existsSync(filepath)) {
     stream = fs.createReadStream(filepath)
   } else if(/html/.test(req.headers.accept || '')) {
