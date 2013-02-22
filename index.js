@@ -166,6 +166,8 @@ function get_args() {
   ENTRY_POINT_TARGET = path.resolve(
     path.join(CWD, ENTRY_POINT_TARGET)
   )
+  ENTRY_POINT_URL = ENTRY_POINT_URL.replace(/^\.\//g, '')
+
 
   PORT = +argv[1] || 9966
   info('listening on '+PORT)
