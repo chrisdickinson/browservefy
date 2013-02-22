@@ -1,65 +1,111 @@
 var http = require('http')
   , spawn = require('child_process').spawn
-  , filed = require('filed')
-  , oppressor = require('oppressor')
+  , url = require('url')
   , path = require('path')
-  , URL = require('url')
-  , response_stream = require('response-stream')
   , fs = require('fs')
-  , fake_index_html = fs.readFileSync(path.join(__dirname, 'fake_index.html'), 'utf8')
-  , process = require('process')
-  , console = require('console')
-  , optimist = require('optimist').argv
+
+var filed = require('filed')
   , LiveReloadServer = require('live-reload')
-  , help = require('./help')
+  , response_stream = require('response-stream')
+  , optimist = require('optimist').argv
+  , colors = require('colors')
+  , through = require('through')
+
+var help = require('./help')
+  , fake_index_html = fs.readFileSync(path.join(__dirname, 'fake_index.html'), 'utf8')
 
 var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
   , browserify_path = which_browserify()
-  , browserify_args
+  , browserify_args = null
+  , CWD = process.cwd()
   , ENTRY_POINT
   , LIVE_PORT
   , PORT
 
 if(!get_args()) {
-  process.exit(1)
+  return process.exit(1)
 }
 
-console.log('using '+browserify_path.replace(process.cwd(), '.'))
+info('using '+browserify_path.replace(CWD, '.'))
+
+var RESPONSE_MAP = [
+    'grey'
+  , 'grey'
+  , 'green'
+  , 'magenta'
+  , 'yellow'
+  , 'red'
+]
 
 http.createServer(function(req, resp) {
-  var url = URL.parse(req.url).pathname.slice(1) || 'index.html'
-    , filepath = path.resolve(path.join(process.cwd(), url))
+  var parsed = url.parse(req.url, true)
+    , pathname = parsed.pathname.slice(1) || 'index.html'
+    , filepath = path.resolve(path.join(CWD, pathname))
+    , logged_pathname = '/'+pathname
+    , logged_color = null 
+    , query = parsed.query || {}
+    , start = Date.now()
+    , bytesize = 0
     , stream
-    , b
-    , uri = URL.parse(req.url, true)
+    , args
+    , bfy
 
-  if(filepath === ENTRY_POINT || uri.query.browserify === "true") {
-    console.log('/'+url, browserify_path+' '+browserify_args.join(' '))
-    var args = browserify_args.slice()
-    args[0] = filepath
-    stream = response_stream((b = spawn(browserify_path, args)).stdout)
+  if(filepath === ENTRY_POINT || 'browserify' in query) {
+    args = [filepath].concat(browserify_args)
 
-    resp.setHeader("content-type", "application/javascript")
+    logged_pathname = logged_pathname + ' -> ' + [browserify_path]
+      .concat(args)
+      .map(function(xxx) { return xxx.replace(CWD, '.') })
+      .join(' ').magenta
 
-    b.stderr.pipe(process.stdout)
+    bfy = spawn(browserify_path, args)
+    stream = response_stream(bfy.stdout)
+
+    logged_color = 'underline'
+    stream.setHeader('content-type', 'text/javascript')
+
+    bfy.stderr.pipe(process.stdout)
+    bfy.stderr.on('data', bfyerror)
+  } else if(fs.existsSync(filepath)) {
+    stream = fs.createReadStream(filepath)
+  } else if(/html/.test(req.headers.accept || '')) {
+    logged_pathname = logged_pathname.blue + ' ' + '(generated)'.grey
+    stream = response_stream(fake_index(query))
+    stream.setHeader('content-type', 'text/html')
   } else {
-    console.log('/'+url)
-    if(!fs.existsSync(filepath)) {
-      return fake_index(req, resp)
-    } else {
-      stream = filed(filepath)
-    }
+    stream = response_stream(through())
+    stream.writeHead(404, {'content-type': 'text/plain'})
+    process.nextTick(function() {
+      stream.end('not found')
+    })
   }
 
-  stream.on('error', function(err) {
-    console.log('500 - '+url.pathname)
-    if(err && err.stack) {
-      console.log('\t'+err.stack.split('\n').join('\n\t'))
-    }
-    resp.end('500')
+  stream.pipe(resp)
+  stream.on('end', log)
+  stream.on('data', function(data) {
+    bytesize += data.length
   })
 
-  stream.pipe(resp)
+  function log() {
+    var code = resp.statusCode + ''
+
+    console.log(
+        code[RESPONSE_MAP[code.charAt(0)]] + ' '
+      + pad(Date.now() - start + 'ms', 6) + ' '
+      + pad(sized(bytesize), 9).grey + ' '
+      + logged_pathname
+    )
+  }
+
+  function bfyerror(data) {
+    resp.end('('+function(error) {
+      var pre = document.createElement('pre')
+      pre.textContent = error
+      document.body.children.length ?
+        document.body.insertBefore(pre, document.body.children[0]) : 
+        document.body.appendChild(pre)
+    }+'('+JSON.stringify(data+'')+'))')
+  }
 }).listen(PORT)
 
 if(optimist.live) {
@@ -70,26 +116,28 @@ if(optimist.live) {
   })
 }
 
-function fake_index(req, resp) {
-  var live_text
+function fake_index(query) {
+  var stream = through()
+    , index_path
+    , live_text
     , html
 
-  resp.writeHead(200, {'content-type':'text/html'})
+  index_path = query.p || ENTRY_POINT.replace(CWD, '')
 
-  var uri = URL.parse(req.url, true)
-
-  var index_path = uri.query.p || ENTRY_POINT.replace(process.cwd(), "")
-
-  if (uri.query.p) {
-    index_path += "?browserify=true"
+  if(query.p) {
+    index_path += '?browserify'
   }
 
   live_text = '<script src="http://localhost:' + LIVE_PORT + '"></script>'
-  html = fake_index_html.
-    replace('{{ PATH }}', index_path).
-    replace('{{ EXTRA }}', LIVE_PORT ? live_text : '')
+  html = fake_index_html
+    .replace('{{ PATH }}', index_path)
+    .replace('{{ EXTRA }}', LIVE_PORT ? live_text : '')
 
-  resp.end(html)
+  process.nextTick(function() {
+    stream.end(html)     
+  })
+
+  return stream
 }
 
 function get_args() {
@@ -106,14 +154,11 @@ function get_args() {
   browserify_args = argv.splice(i+1, argv.length - i)
 
   ENTRY_POINT = path.resolve(
-    path.join(process.cwd(), argv[0] || 'main.js')
+    path.join(CWD, argv[0] || 'main.js')
   )
 
   PORT = +argv[1] || 9966
-  console.log('listening on '+PORT)
-
-  browserify_args.unshift(ENTRY_POINT)
-
+  info('listening on '+PORT)
   return true
 }
 
@@ -122,9 +167,36 @@ function which_browserify() {
     return optimist.browserify
   }
 
-  var local = path.join(process.cwd(), 'node_modules/.bin/browserify')
+  var local = path.join(CWD, 'node_modules/.bin/browserify')
   if(fs.existsSync(local)) {
     return local
   }
   return 'browserify'
+}
+
+function info(what) {
+  console.log(what.grey)
+}
+
+function sized(bytesize) {
+  var powers = ['B', 'KB', 'MB', 'GB']
+    , curr
+    , next
+
+  for(var i = 0, len = powers.length; i < len; ++i) {
+    curr = Math.pow(1024, i)
+    next = Math.pow(1024, i + 1) 
+
+    if(bytesize < next) {
+      return (bytesize / curr).toFixed(2).replace(/\.?0+$/g, '') + powers[i]
+    }
+  }
+  return (bytesize / curr) + 'gib'
+}
+
+function pad(s, n, w) {
+  while(s.length < n) {
+    s = (w || ' ') + s
+  }
+  return s
 }
