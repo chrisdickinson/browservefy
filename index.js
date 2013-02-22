@@ -78,15 +78,15 @@ function fake_index(req, resp) {
 
   var uri = URL.parse(req.url, true)
 
-  var indexPath = uri.query.p || ENTRY_POINT.replace(process.cwd(), "")
+  var index_path = uri.query.p || ENTRY_POINT.replace(process.cwd(), "")
 
   if (uri.query.p) {
-    indexPath += "?browserify=true"
+    index_path += "?browserify=true"
   }
 
   live_text = '<script src="http://localhost:' + LIVE_PORT + '"></script>'
   html = fake_index_html.
-    replace('{{ PATH }}', indexPath).
+    replace('{{ PATH }}', index_path).
     replace('{{ EXTRA }}', LIVE_PORT ? live_text : '')
 
   resp.end(html)
