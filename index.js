@@ -18,7 +18,8 @@ var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
   , browserify_path = which_browserify()
   , browserify_args = null
   , CWD = process.cwd()
-  , ENTRY_POINT
+  , ENTRY_POINT_TARGET
+  , ENTRY_POINT_URL
   , LIVE_PORT
   , PORT
 
@@ -50,8 +51,10 @@ http.createServer(function(req, resp) {
     , args
     , bfy
 
-  if(filepath === ENTRY_POINT || 'browserify' in query) {
-    args = [filepath].concat(browserify_args)
+  if(pathname === ENTRY_POINT_URL || 'browserify' in query) {
+    args = [
+      pathname === ENTRY_POINT_URL ? ENTRY_POINT_TARGET : filepath
+    ].concat(browserify_args)
 
     logged_pathname = logged_pathname + ' -> ' + [browserify_path]
       .concat(args)
@@ -65,7 +68,11 @@ http.createServer(function(req, resp) {
     stream.setHeader('content-type', 'text/javascript')
 
     bfy.stderr.pipe(process.stdout)
-    bfy.stderr.on('data', bfyerror)
+    var error = []
+    bfy.stderr.on('data', [].push.bind(error))
+    bfy.stderr.on('end', function() {
+      bfyerror(error.join(''))
+    })
   } else if(fs.existsSync(filepath)) {
     stream = fs.createReadStream(filepath)
   } else if(/html/.test(req.headers.accept || '')) {
@@ -122,7 +129,7 @@ function fake_index(query) {
     , live_text
     , html
 
-  index_path = query.p || ENTRY_POINT.replace(CWD, '')
+  index_path = query.p || ENTRY_POINT_URL.replace(CWD, '')
 
   if(query.p) {
     index_path += '?browserify'
@@ -153,8 +160,11 @@ function get_args() {
 
   browserify_args = argv.splice(i+1, argv.length - i)
 
-  ENTRY_POINT = path.resolve(
-    path.join(CWD, argv[0] || 'main.js')
+  argv[0] = argv[0].split(':')
+  ENTRY_POINT_TARGET = argv[0][0]
+  ENTRY_POINT_URL = argv[0][~~(1 % argv[0].length)]
+  ENTRY_POINT_TARGET = path.resolve(
+    path.join(CWD, ENTRY_POINT_TARGET)
   )
 
   PORT = +argv[1] || 9966

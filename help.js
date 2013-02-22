@@ -2,7 +2,7 @@ module.exports = help
 
 function help() {
 /*
-browservefy path/to/entry.js [PORT] -- [arguments to forward to browserify command]
+browservefy path/to/entry.js[:as.js] [PORT] -- [arguments to forward to browserify command]
 
   Spins up a development server on ``http://localhost:PORT`` for working with static 
   files and browserifiable JavaScript modules.
@@ -17,6 +17,9 @@ browservefy path/to/entry.js [PORT] -- [arguments to forward to browserify comma
   the forwarded arguments on the file and pipe the results into the response.
 
   If no PORT is defined, it defaults to 9966.
+
+  If you specify your file in the form ``realfile.js:as-file.js``, any request to
+  ``as-file.js`` will browserify ``realfile.js`` and return it as the output.
 
   arguments:
 
