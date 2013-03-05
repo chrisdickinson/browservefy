@@ -10,6 +10,7 @@ var filed = require('filed')
   , optimist = require('optimist').argv
   , colors = require('colors')
   , through = require('through')
+  , lsr = require('ls-r')
 
 var help = require('./help')
   , fake_index_html = fs.readFileSync(path.join(__dirname, 'fake_index.html'), 'utf8')
@@ -43,7 +44,7 @@ http.createServer(function(req, resp) {
     , pathname = parsed.pathname.slice(1) || 'index.html'
     , filepath = path.resolve(path.join(CWD, pathname))
     , logged_pathname = '/'+pathname
-    , logged_color = null 
+    , logged_color = null
     , query = parsed.query || {}
     , start = Date.now()
     , bytesize = 0
@@ -71,10 +72,31 @@ http.createServer(function(req, resp) {
     var error = []
     bfy.stderr.on('data', [].push.bind(error))
     bfy.stderr.on('end', function() {
-      bfyerror(error.join(''))
+      if (error.length > 0) {
+        bfyerror(error.join(''))
+      }
     })
   } else if(fs.existsSync(filepath)) {
     stream = fs.createReadStream(filepath)
+  } else if (req.url === "/" && optimist.indexed) {
+    stream = response_stream(through())
+    lsr(path.join(process.cwd(), optimist.indexed), function (err, _, stats) {
+      var files = stats.filter(function (s) {
+        return s.isFile()
+      })
+      var paths = files.map(function (s) {
+        return s.path
+      })
+      var rels = paths.map(function (uri) {
+        return path.relative(process.cwd(), uri)
+      })
+      var links = rels.map(function (uri) {
+        return "<div><a href='/?p=" + uri + "'>" + uri + "</a></div>"
+      })
+      var html = links.join("")
+      stream.setHeader('content-type', 'text/html')
+      stream.end(html)
+    })
   } else if(/html/.test(req.headers.accept || '')) {
     logged_pathname = logged_pathname.blue + ' ' + '(generated)'.grey
     stream = response_stream(fake_index(query))
@@ -109,7 +131,7 @@ http.createServer(function(req, resp) {
       var pre = document.createElement('pre')
       pre.textContent = error
       document.body.children.length ?
-        document.body.insertBefore(pre, document.body.children[0]) : 
+        document.body.insertBefore(pre, document.body.children[0]) :
         document.body.appendChild(pre)
     }+'('+JSON.stringify(data+'')+'))')
   }
@@ -141,7 +163,7 @@ function fake_index(query) {
     .replace('{{ EXTRA }}', LIVE_PORT ? live_text : '')
 
   process.nextTick(function() {
-    stream.end(html)     
+    stream.end(html)
   })
 
   return stream
@@ -197,7 +219,7 @@ function sized(bytesize) {
 
   for(var i = 0, len = powers.length; i < len; ++i) {
     curr = Math.pow(1024, i)
-    next = Math.pow(1024, i + 1) 
+    next = Math.pow(1024, i + 1)
 
     if(bytesize < next) {
       return (bytesize / curr).toFixed(2).replace(/\.?0+$/g, '') + powers[i]
