@@ -15,9 +15,9 @@ var help = require('./help')
   , fake_index_html = fs.readFileSync(path.join(__dirname, 'fake_index.html'), 'utf8')
 
 var argv = process.argv.slice(/node/.test(process.argv[0]) ? 2 : 1)
+  , CWD = process.cwd()
   , browserify_path = which_browserify()
   , browserify_args = null
-  , CWD = process.cwd()
   , ENTRY_POINT_TARGET
   , ENTRY_POINT_URL
   , LIVE_PORT
