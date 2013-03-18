@@ -106,6 +106,9 @@ http.createServer(function(req, resp) {
 
   function bfyerror(data) {
     resp.end('('+function(error) {
+      if (!error || error.length === 0) {
+        return;
+      };
       var pre = document.createElement('pre')
       pre.textContent = error
       document.body.children.length ?
