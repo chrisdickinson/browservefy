@@ -71,7 +71,9 @@ http.createServer(function(req, resp) {
     var error = []
     bfy.stderr.on('data', [].push.bind(error))
     bfy.stderr.on('end', function() {
-      bfyerror(error.join(''))
+      if (error.length > 0) {
+        bfyerror(error.join(''))
+      }
     })
   } else if(fs.existsSync(filepath)) {
     stream = fs.createReadStream(filepath)
